@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#101827">
+<title>TRUE DETECTOR</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;background:#101827;color:white;font-family:Arial,sans-serif;padding:24px}
+header{text-align:center;padding:25px 0}
+.logo{font-size:36px;font-weight:bold;color:#42d9c8}
+h1{font-size:27px}
+p{color:#b8c5d6;line-height:1.6}
+.card{background:#1d2a3d;padding:22px;border-radius:18px;margin:20px 0}
+input,select{width:100%;padding:14px;border-radius:10px;margin-top:12px;font-size:16px}
+input{background:white;color:#111}
+select{background:white;color:#111}
+.result{background:#263a50;padding:15px;border-radius:12px;margin-top:15px;overflow-wrap:anywhere}
+footer{text-align:center;color:#aab8c9;font-size:12px;margin:30px 0}
+</style>
+</head>
+<body>
+<header>
+<div class="logo">TRUE DETECTOR</div>
+<h1>Detector de Manipulación</h1>
+<p>Herramienta inicial para organizar el análisis de audios e imágenes.</p>
+</header>
+
+<div class="card">
+<h2>🌍 Idioma</h2>
+<select id="language">
+<option value="es">Español</option>
+<option value="en">English</option>
+<option value="de">Deutsch</option>
+<option value="zh">中文</option>
+</select>
+</div>
+
+<div class="card">
+<h2>🎙️ Análisis de audio</h2>
+<p>Selecciona un audio de WhatsApp para preparar su análisis.</p>
+<input type="file" id="audio" accept="audio/*">
+<div id="audioResult" class="result">Esperando audio...</div>
+</div>
+
+<div class="card">
+<h2>🖼️ Análisis de imágenes</h2>
+<p>Selecciona una fotografía para preparar su análisis.</p>
+<input type="file" id="photo" accept="image/*">
+<div id="photoResult" class="result">Esperando imagen...</div>
+</div>
+
+<div class="card">
+<h2>🔍 Resultado</h2>
+<p id="finalResult">Selecciona un archivo para comenzar.</p>
+</div>
+
+<footer>
+TRUE DETECTOR © 2026<br>
+Los resultados son orientativos y no demuestran si una persona miente.
+</footer>
+
+<script>
+document.getElementById("audio").addEventListener("change", function(){
+  const file = this.files && this.files[0];
+  if (!file) return;
+  document.getElementById("audioResult").textContent =
+    "Audio seleccionado: " + file.name + " (" + (file.size/1024/1024).toFixed(2) + " MB)";
+  document.getElementById("finalResult").textContent =
+    "Archivo recibido. El análisis avanzado de voz y contenido todavía no está conectado.";
+});
+
+document.getElementById("photo").addEventListener("change", function(){
+  const file = this.files && this.files[0];
+  if (!file) return;
+  document.getElementById("photoResult").textContent =
+    "Imagen seleccionada: " + file.name + " (" + (file.size/1024).toFixed(1) + " KB)";
+  document.getElementById("finalResult").textContent =
+    "Imagen recibida. La detección avanzada de manipulaciones todavía no está conectada.";
+});
+</script>
+</body>
+</html>
