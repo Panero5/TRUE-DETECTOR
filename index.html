@@ -67,9 +67,15 @@ document.getElementById("audio").addEventListener("change", function(){
   if (!file) return;
   document.getElementById("audioResult").textContent =
     "Audio seleccionado: " + file.name + " (" + (file.size/1024/1024).toFixed(2) + " MB)";
+  const reproductor = document.createElement("audio");
+reproductor.controls = true;
+reproductor.src = URL.createObjectURL(file);
+  
+document.getElementById("audioResult").appendChild(reproductor);
   document.getElementById("finalResult").textContent =
     "Archivo recibido. El análisis avanzado de voz y contenido todavía no está conectado.";
 });
+  
 
 document.getElementById("photo").addEventListener("change", function(){
   const file = this.files && this.files[0];
