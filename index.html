@@ -86,6 +86,10 @@ document.getElementById("photo").addEventListener("change", function(){
   document.getElementById("finalResult").textContent =
     "Imagen recibida. La detección avanzada de manipulaciones todavía no está conectada.";
 });
+ if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('./sw.js')
+    .catch(error => console.error(error));
+} 
 </script>
 </body>
 </html>
