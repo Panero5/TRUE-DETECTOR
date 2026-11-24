@@ -6,5 +6,25 @@
   "display": "standalone",
   "background_color": "#101827",
   "theme_color": "#101827",
-  "lang": "es"
+  "lang": "es",
+  "share_target": {
+    "action": "./share-audio",
+    "method": "POST",
+    "enctype": "multipart/form-data",
+    "params": {
+      "files": [
+        {
+          "name": "audio",
+          "accept": [
+            "audio/*",
+            ".opus",
+            ".ogg",
+            ".m4a",
+            ".mp3",
+            ".wav"
+          ]
+        }
+      ]
+    }
+  }
 }
