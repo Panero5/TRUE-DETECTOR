@@ -83,6 +83,21 @@ function showFile(file) {
   else preview.alt = 'Imagen recibida';
   preview.src = previewUrls[kind] = URL.createObjectURL(file);
   result.appendChild(preview);
+  if (kind === 'video' || kind === 'photo') {
+    const details = document.createElement('p');
+    details.textContent = 'Leyendo características locales…';
+    result.appendChild(details);
+    const describe = () => {
+      const w = kind === 'photo' ? preview.naturalWidth : preview.videoWidth;
+      const h = kind === 'photo' ? preview.naturalHeight : preview.videoHeight;
+      if (!w || !h) { details.textContent = 'No se pudieron leer las dimensiones.'; return; }
+      const duration = kind === 'video' ? preview.duration : null;
+      details.textContent = 'Resolución: '+w+' × '+h+' píxeles. '+(kind === 'video' && Number.isFinite(duration) ? 'Duración: '+duration.toFixed(1)+' s. '+(duration > 60 ? 'Supera el límite provisional propuesto de 60 s para futuros análisis avanzados. ' : '') : '')+'Estos datos técnicos no permiten determinar si el archivo ha sido manipulado.';
+    };
+    preview.addEventListener(kind === 'photo' ? 'load' : 'loadedmetadata', describe, {once:true});
+    preview.addEventListener('error', () => { details.textContent = 'El dispositivo no puede previsualizar este formato.'; }, {once:true});
+    if (kind === 'photo' ? preview.complete : preview.readyState >= 1) describe();
+  }
   if (kind === 'audio') {
     const button = document.createElement('button');
     button.textContent = 'Analizar características del audio';
