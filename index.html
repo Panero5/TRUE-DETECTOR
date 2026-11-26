@@ -83,6 +83,37 @@ function showFile(file) {
   else preview.alt = 'Imagen recibida';
   preview.src = previewUrls[kind] = URL.createObjectURL(file);
   result.appendChild(preview);
+  if (kind === 'audio') {
+    const button = document.createElement('button');
+    button.textContent = 'Analizar características del audio';
+    button.style.cssText = 'display:block;width:100%;margin-top:12px;padding:12px;border:0;border-radius:10px;background:#42d9c8;color:#101827;font-weight:bold';
+    const report = document.createElement('div');
+    report.style.whiteSpace = 'pre-line';
+    result.append(button,report);
+    button.onclick = async () => {
+      button.disabled = true;
+      report.textContent = 'Analizando…';
+      let ctx;
+      try {
+        if(file.size > 25*1024*1024) throw new Error('El límite provisional es 25 MB.');
+        ctx = new AudioContext();
+        const buffer = await ctx.decodeAudioData(await file.arrayBuffer());
+        let sum=0, peak=0, clipped=0, quiet=0, windows=0, total=0;
+        const step=Math.max(1,Math.round(buffer.sampleRate*0.05));
+        for(let ch=0;ch<buffer.numberOfChannels;ch++){
+          const data=buffer.getChannelData(ch);
+          for(let i=0;i<data.length;i+=step){
+            let local=0; const end=Math.min(i+step,data.length);
+            for(let j=i;j<end;j++){const v=Math.abs(data[j]);local+=v*v;peak=Math.max(peak,v);if(v>=0.999)clipped++;}
+            sum+=local;total+=end-i;windows++;if(Math.sqrt(local/(end-i))<0.01)quiet++;
+          }
+        }
+        const db=v=>v>0?(20*Math.log10(v)).toFixed(1)+' dBFS':'−∞ dBFS';
+        report.textContent=['Duración: '+buffer.duration.toFixed(2)+' s','Canales: '+buffer.numberOfChannels,'Frecuencia de análisis: '+buffer.sampleRate+' Hz (audio decodificado)','Nivel RMS: '+db(Math.sqrt(sum/total)),'Nivel de pico: '+db(peak),'Ventanas de nivel bajo: '+(100*quiet/windows).toFixed(1)+' %','Muestras cercanas al máximo: '+(100*clipped/total).toFixed(3)+' %','Estas medidas no prueban manipulación ni engaño.'].join('\n');
+      } catch(e){report.textContent='No se pudo analizar: '+e.message;}
+      finally{if(ctx)await ctx.close().catch(()=>{});button.disabled=false;}
+    };
+  }
   final.textContent = 'Archivo recibido localmente. El análisis avanzado todavía no está conectado.';
 }
 for (const id of ['audio','photo','video']) document.getElementById(id).addEventListener('change', e => { if(e.target.files[0]) showFile(e.target.files[0]); });
