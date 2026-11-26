@@ -8,20 +8,29 @@
   "theme_color": "#101827",
   "lang": "es",
   "share_target": {
-    "action": "./share-audio",
+    "action": "./share-media",
     "method": "POST",
     "enctype": "multipart/form-data",
     "params": {
       "files": [
         {
-          "name": "audio",
+          "name": "media",
           "accept": [
             "audio/*",
+            "image/*",
+            "video/*",
             ".opus",
             ".ogg",
             ".m4a",
             ".mp3",
-            ".wav"
+            ".wav",
+            ".jpg",
+            ".jpeg",
+            ".png",
+            ".webp",
+            ".mp4",
+            ".mov",
+            ".webm"
           ]
         }
       ]
