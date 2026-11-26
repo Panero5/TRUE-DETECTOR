@@ -90,6 +90,28 @@ function showFile(file) {
     const report = document.createElement('div');
     report.style.whiteSpace = 'pre-line';
     result.append(button,report);
+    const transcript = document.createElement('textarea');
+    transcript.placeholder = 'Introduce o pega una transcripción para revisarla';
+    transcript.setAttribute('aria-label','Transcripción del audio');
+    transcript.style.cssText = 'width:100%;min-height:110px;margin-top:16px;padding:12px;border-radius:10px;font:inherit;box-sizing:border-box';
+    const heading = document.createElement('h3');
+    heading.textContent = 'Transcripción y contenido';
+    const note = document.createElement('p');
+    note.textContent = 'Transcripción manual provisional. El reconocimiento automático todavía no está conectado.';
+    const review = document.createElement('button');
+    review.textContent = 'Revisar texto';
+    review.style.cssText = button.style.cssText;
+    const output = document.createElement('div');
+    output.style.whiteSpace = 'pre-line';
+    review.onclick = () => {
+      const value = transcript.value.trim();
+      if(!value){output.textContent='Introduce primero una transcripción.';return;}
+      const lang = document.getElementById('language').value;
+      const words = Array.from(new Intl.Segmenter(lang,{granularity:'word'}).segment(value)).filter(s=>s.isWordLike).length;
+      output.textContent = 'Palabras: '+words+'\nRevisa las afirmaciones, fechas y cantidades frente a otras fuentes. Esta revisión básica no identifica contradicciones automáticamente ni determina la veracidad.';
+    };
+    result.append(heading,note,transcript,review,output);
+
     button.onclick = async () => {
       button.disabled = true;
       report.textContent = 'Analizando…';
