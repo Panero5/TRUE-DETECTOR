@@ -53,6 +53,11 @@ footer{text-align:center;color:#aab8c9;font-size:12px;margin:30px 0}
 </div>
 
 <div class="card">
+<h2>🎬 Análisis de vídeo</h2>
+<input type="file" id="video" accept="video/*">
+<div id="videoResult" class="result">Esperando vídeo...</div>
+</div>
+<div class="card">
 <h2>🔍 Resultado</h2>
 <p id="finalResult">Selecciona un archivo para comenzar.</p>
 </div>
@@ -63,33 +68,41 @@ Los resultados son orientativos y no demuestran si una persona miente.
 </footer>
 
 <script>
-document.getElementById("audio").addEventListener("change", function(){
-  const file = this.files && this.files[0];
-  if (!file) return;
-  document.getElementById("audioResult").textContent =
-    "Audio seleccionado: " + file.name + " (" + (file.size/1024/1024).toFixed(2) + " MB)";
-  const reproductor = document.createElement("audio");
-reproductor.controls = true;
-reproductor.src = URL.createObjectURL(file);
-  
-document.getElementById("audioResult").appendChild(reproductor);
-  document.getElementById("finalResult").textContent =
-    "Archivo recibido. El análisis avanzado de voz y contenido todavía no está conectado.";
-});
-  
-
-document.getElementById("photo").addEventListener("change", function(){
-  const file = this.files && this.files[0];
-  if (!file) return;
-  document.getElementById("photoResult").textContent =
-    "Imagen seleccionada: " + file.name + " (" + (file.size/1024).toFixed(1) + " KB)";
-  document.getElementById("finalResult").textContent =
-    "Imagen recibida. La detección avanzada de manipulaciones todavía no está conectada.";
-});
- if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.register('./sw.js')
-    .catch(error => console.error(error));
-} 
+let previewUrls = {};
+function showFile(file) {
+  const ext = file.name.split('.').pop().toLowerCase();
+  const kind = file.type.startsWith('audio/') || ['opus','ogg','m4a','mp3','wav','aac'].includes(ext) ? 'audio' : file.type.startsWith('image/') || ['jpg','jpeg','png','webp','gif','heic'].includes(ext) ? 'photo' : file.type.startsWith('video/') || ['mp4','mov','webm','3gp','mkv'].includes(ext) ? 'video' : null;
+  const final = document.getElementById('finalResult');
+  if (!kind) { final.textContent = 'Formato no compatible.'; return; }
+  const result = document.getElementById(kind+'Result');
+  if (previewUrls[kind]) URL.revokeObjectURL(previewUrls[kind]);
+  result.textContent = file.name+' ('+(file.size/1048576).toFixed(2)+' MB)';
+  const preview = document.createElement(kind === 'photo' ? 'img' : kind);
+  preview.style.cssText = 'display:block;max-width:100%;margin-top:12px';
+  if (kind !== 'photo') { preview.controls = true; preview.preload = 'metadata'; }
+  else preview.alt = 'Imagen recibida';
+  preview.src = previewUrls[kind] = URL.createObjectURL(file);
+  result.appendChild(preview);
+  final.textContent = 'Archivo recibido localmente. El análisis avanzado todavía no está conectado.';
+}
+for (const id of ['audio','photo','video']) document.getElementById(id).addEventListener('change', e => { if(e.target.files[0]) showFile(e.target.files[0]); });
+(async () => {
+  const params = new URLSearchParams(location.search);
+  const id = params.get('shared');
+  try {
+    if (id && /^[a-f0-9-]{36}$/i.test(id)) {
+      const cache = await caches.open('true-detector-shares-v1');
+      const key = new URL('shared/'+id,location.href).href;
+      const response = await cache.match(key);
+      if (!response) throw new Error('Archivo no encontrado');
+      const file = new File([await response.blob()],decodeURIComponent(response.headers.get('X-File-Name') || 'archivo'),{type:response.headers.get('Content-Type') || ''});
+      await cache.delete(key);
+      showFile(file);
+    } else if (params.has('shareError')) throw new Error('No se pudo recibir el archivo');
+  } catch(e) { document.getElementById('finalResult').textContent = 'No se pudo recibir el archivo. Intenta compartirlo de nuevo.'; }
+  finally { if(id || params.has('shareError')) history.replaceState(null,'',location.pathname); }
+})();
+if ('serviceWorker' in navigator) navigator.serviceWorker.register('./sw.js').catch(console.error);
 </script>
 </body>
 </html>
