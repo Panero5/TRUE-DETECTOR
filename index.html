@@ -108,8 +108,32 @@ function showFile(file) {
             sum+=local;total+=end-i;windows++;if(Math.sqrt(local/(end-i))<0.01)quiet++;
           }
         }
+        const intervals=[], changes=[];
+        const frame=Math.max(1,Math.round(buffer.sampleRate*0.05));
+        let start=null, previous=null;
+        for(let i=0;i<buffer.length;i+=frame){
+          const end=Math.min(i+frame,buffer.length);
+          let energy=0;
+          for(let ch=0;ch<buffer.numberOfChannels;ch++){
+            const data=buffer.getChannelData(ch);
+            for(let j=i;j<end;j++)energy+=data[j]*data[j];
+          }
+          const rms=Math.sqrt(energy/((end-i)*buffer.numberOfChannels));
+          const level=20*Math.log10(Math.max(rms,0.00001));
+          const t=i/buffer.sampleRate;
+          if(level < -40){if(start===null)start=t;}
+          else if(start!==null){if(t-start>=0.3)intervals.push([start,t]);start=null;}
+          if(previous!==null && Math.abs(level-previous)>=20 && Math.max(level,previous)>-30)changes.push(t);
+          previous=level;
+        }
+        if(start!==null && buffer.duration-start>=0.3)intervals.push([start,buffer.duration]);
+        const stamp=t=>t.toFixed(2)+' s';
         const db=v=>v>0?(20*Math.log10(v)).toFixed(1)+' dBFS':'−∞ dBFS';
-        report.textContent=['Duración: '+buffer.duration.toFixed(2)+' s','Canales: '+buffer.numberOfChannels,'Frecuencia de análisis: '+buffer.sampleRate+' Hz (audio decodificado)','Nivel RMS: '+db(Math.sqrt(sum/total)),'Nivel de pico: '+db(peak),'Ventanas de nivel bajo: '+(100*quiet/windows).toFixed(1)+' %','Muestras cercanas al máximo: '+(100*clipped/total).toFixed(3)+' %','Estas medidas no prueban manipulación ni engaño.'].join('\n');
+        report.textContent=['Duración: '+buffer.duration.toFixed(2)+' s','Canales: '+buffer.numberOfChannels,'Frecuencia de análisis: '+buffer.sampleRate+' Hz (audio decodificado)','Nivel RMS: '+db(Math.sqrt(sum/total)),'Nivel de pico: '+db(peak),'Ventanas de nivel bajo: '+(100*quiet/windows).toFixed(1)+' %','Muestras cercanas al máximo: '+(100*clipped/total).toFixed(3)+' %','Intervalos de nivel bajo (mín. 0,3 s): '+intervals.length,
+        ...intervals.slice(0,10).map(([a,b])=>'• '+stamp(a)+' – '+stamp(b)),
+        'Cambios bruscos de intensidad: '+changes.length,
+        ...changes.slice(0,10).map(t=>'• '+stamp(t)),
+        'Se muestran hasta 10 eventos de cada tipo. Las pausas y cambios de volumen pueden ser naturales. No son pruebas de cortes, manipulación ni engaño.'].join('\n');
       } catch(e){report.textContent='No se pudo analizar: '+e.message;}
       finally{if(ctx)await ctx.close().catch(()=>{});button.disabled=false;}
     };
