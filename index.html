@@ -125,7 +125,41 @@ function showFile(file) {
       const words = Array.from(new Intl.Segmenter(lang,{granularity:'word'}).segment(value)).filter(s=>s.isWordLike).length;
       output.textContent = 'Palabras: '+words+'\nRevisa las afirmaciones, fechas y cantidades frente a otras fuentes. Esta revisión básica no identifica contradicciones automáticamente ni determina la veracidad.';
     };
-    result.append(heading,note,transcript,review,output);
+    const auto=document.createElement('button');
+    auto.textContent='Transcribir automáticamente (experimental)';
+    auto.style.cssText=button.style.cssText;
+    const status=document.createElement('p');
+    status.setAttribute('role','status');
+    note.textContent='Transcripción experimental en el dispositivo. La primera vez descarga un modelo de voz. Revisa el texto obtenido.';
+    result.append(heading,note,auto,status,transcript,review,output);
+    auto.onclick=async()=>{
+      auto.disabled=true;
+      let ctx;
+      try{
+        if(file.size>25*1024*1024)throw new Error('Archivo demasiado grande.');
+        status.textContent='Preparando audio…';
+        ctx=new AudioContext({sampleRate:16000});
+        const decoded=await ctx.decodeAudioData(await file.arrayBuffer());
+        if(decoded.duration>60)throw new Error('Límite experimental: 60 segundos.');
+        const offline=new OfflineAudioContext(1,Math.ceil(decoded.duration*16000),16000);
+        const source=offline.createBufferSource();
+        source.buffer=decoded;source.connect(offline.destination);source.start();
+        const pcm=(await offline.startRendering()).getChannelData(0);
+        await ctx.close();ctx=null;
+        status.textContent='Cargando modelo de voz. Puede tardar varios minutos…';
+        const {pipeline,env}=await import('https://cdn.jsdelivr.net/npm/@huggingface/transformers@3.7.2');
+        env.allowLocalModels=false;
+        window.tdTranscriber ||= pipeline('automatic-speech-recognition','onnx-community/whisper-tiny',{device:'wasm',dtype:'q8'});
+        let recognizer;
+        try{recognizer=await window.tdTranscriber;}catch(e){window.tdTranscriber=null;throw e;}
+        status.textContent='Transcribiendo…';
+        const lang={es:'spanish',en:'english',de:'german',fr:'french'}[document.getElementById('language').value];
+        const answer=await recognizer(pcm,{language:lang,task:'transcribe',chunk_length_s:30,stride_length_s:5});
+        transcript.value=answer.text||'';
+        status.textContent=transcript.value.trim()?'Transcripción terminada. Revisa posibles errores.':'No se obtuvo texto.';
+      }catch(e){status.textContent='No se pudo transcribir: '+e.message;}
+      finally{if(ctx)await ctx.close().catch(()=>{});auto.disabled=false;}
+    };
 
     button.onclick = async () => {
       button.disabled = true;
