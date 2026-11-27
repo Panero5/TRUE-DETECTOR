@@ -149,9 +149,9 @@ function showFile(file) {
         status.textContent='Cargando modelo de voz. Puede tardar varios minutos…';
         const {pipeline,env}=await import('https://cdn.jsdelivr.net/npm/@huggingface/transformers@3.7.2');
         env.allowLocalModels=false;
-        window.tdTranscriber ||= pipeline('automatic-speech-recognition','onnx-community/whisper-tiny',{device:'wasm',dtype:'q8'});
+        window.tdBaseTranscriber ||= pipeline('automatic-speech-recognition','onnx-community/whisper-base',{device:'wasm',dtype:'q8'});
         let recognizer;
-        try{recognizer=await window.tdTranscriber;}catch(e){window.tdTranscriber=null;throw e;}
+        try{recognizer=await window.tdBaseTranscriber;}catch(e){window.tdBaseTranscriber=null;throw e;}
         status.textContent='Transcribiendo…';
         const lang={es:'spanish',en:'english',de:'german',fr:'french'}[document.getElementById('language').value];
         const answer=await recognizer(pcm,{language:lang,task:'transcribe',chunk_length_s:30,stride_length_s:5});
