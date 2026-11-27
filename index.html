@@ -168,7 +168,7 @@ function showFile(file) {
         const loaded=performance.now();
         status.textContent='Transcribiendo…';
         const lang={es:'spanish',en:'english',de:'german',fr:'french'}[document.getElementById('language').value];
-        const answer=await recognizer(pcm,{language:lang,task:'transcribe',chunk_length_s:30,stride_length_s:5,num_beams:3});
+        const answer=await recognizer(pcm,{language:lang,task:'transcribe',chunk_length_s:30,stride_length_s:5,num_beams:1});
         transcript.value=answer.text||'';
         const ended=performance.now();
         const sec=(a,b)=>((b-a)/1000).toFixed(1)+' s';
