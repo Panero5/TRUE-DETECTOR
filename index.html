@@ -132,9 +132,10 @@ function showFile(file) {
     modelChoice.setAttribute('aria-label','Modelo de transcripción');
     modelChoice.add(new Option('Mayor precisión (Whisper Small)','small'));
     modelChoice.add(new Option('Menor consumo (Whisper Base)','base'));
+    modelChoice.add(new Option('Prueba rápida (Whisper Tiny)','tiny'));
     const status=document.createElement('p');
     status.setAttribute('role','status');
-    note.textContent='Transcripción experimental en el dispositivo. La primera vez descarga un modelo de voz. Small requiere más memoria y tiempo; si falla, selecciona Base. Revisa el texto obtenido.';
+    note.textContent='Transcripción experimental en el dispositivo. La primera vez descarga un modelo de voz. Small prioriza precisión; Base reduce consumo; Tiny permite comparar velocidad, pero puede cometer más errores. Revisa el texto obtenido.';
     result.append(heading,note,modelChoice,auto,status,transcript,review,output);
     auto.onclick=async()=>{
       auto.disabled=true;
@@ -156,6 +157,7 @@ function showFile(file) {
         status.textContent='Cargando modelo de voz. Puede tardar varios minutos…';
         const {pipeline,env}=await import('https://cdn.jsdelivr.net/npm/@huggingface/transformers@3.7.2');
         env.allowLocalModels=false;
+        env.backends.onnx.wasm.numThreads = self.crossOriginIsolated ? Math.min(4,navigator.hardwareConcurrency||1) : 1;
         const model=modelChoice.value;
         if(window.tdModelName!==model){
           if(window.tdBaseTranscriber){try{await (await window.tdBaseTranscriber).dispose();}catch(e){}}
@@ -168,7 +170,7 @@ function showFile(file) {
         const loaded=performance.now();
         status.textContent='Transcribiendo…';
         const lang={es:'spanish',en:'english',de:'german',fr:'french'}[document.getElementById('language').value];
-        const answer=await recognizer(pcm,{language:lang,task:'transcribe',chunk_length_s:30,stride_length_s:5,num_beams:1});
+        const answer=await recognizer(pcm,{language:lang,task:'transcribe',...(pcm.length>480000?{chunk_length_s:30,stride_length_s:5}:{}),num_beams:1,return_timestamps:false});
         transcript.value=answer.text||'';
         const ended=performance.now();
         const sec=(a,b)=>((b-a)/1000).toFixed(1)+' s';
