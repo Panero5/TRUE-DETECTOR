@@ -140,6 +140,7 @@ function showFile(file) {
       auto.disabled=true;
       modelChoice.disabled=true;
       let ctx;
+      const started=performance.now();
       try{
         if(file.size>25*1024*1024)throw new Error('Archivo demasiado grande.');
         status.textContent='Preparando audio…';
@@ -151,6 +152,7 @@ function showFile(file) {
         source.buffer=decoded;source.connect(offline.destination);source.start();
         const pcm=(await offline.startRendering()).getChannelData(0);
         await ctx.close();ctx=null;
+        const prepared=performance.now();
         status.textContent='Cargando modelo de voz. Puede tardar varios minutos…';
         const {pipeline,env}=await import('https://cdn.jsdelivr.net/npm/@huggingface/transformers@3.7.2');
         env.allowLocalModels=false;
@@ -163,11 +165,14 @@ function showFile(file) {
         window.tdBaseTranscriber ||= pipeline('automatic-speech-recognition','onnx-community/whisper-'+model,{device:'wasm',dtype:'q8'});
         let recognizer;
         try{recognizer=await window.tdBaseTranscriber;}catch(e){window.tdBaseTranscriber=null;throw e;}
+        const loaded=performance.now();
         status.textContent='Transcribiendo…';
         const lang={es:'spanish',en:'english',de:'german',fr:'french'}[document.getElementById('language').value];
         const answer=await recognizer(pcm,{language:lang,task:'transcribe',chunk_length_s:30,stride_length_s:5,num_beams:3});
         transcript.value=answer.text||'';
-        status.textContent=transcript.value.trim()?'Transcripción terminada. Revisa posibles errores.':'No se obtuvo texto.';
+        const ended=performance.now();
+        const sec=(a,b)=>((b-a)/1000).toFixed(1)+' s';
+        status.textContent=(transcript.value.trim()?'Transcripción terminada. Revisa posibles errores.':'No se obtuvo texto.')+' Preparación: '+sec(started,prepared)+' | Modelo: '+sec(prepared,loaded)+' | Transcripción: '+sec(loaded,ended)+' | Total: '+sec(started,ended);
       }catch(e){status.textContent='No se pudo transcribir: '+e.message;}
       finally{if(ctx)await ctx.close().catch(()=>{});auto.disabled=false;modelChoice.disabled=false;}
     };
